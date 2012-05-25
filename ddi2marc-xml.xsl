@@ -79,7 +79,7 @@ processor that supports EXSLT is pretty important.
             http://www.oclc.org/developer/documentation/worldcat-search-api/marc-xml-sample
 
         -->
-        <leader><xsl:text>00000    a2200000   4500</xsl:text></leader>
+        <leader><xsl:text>00000cam a2200000   4500</xsl:text></leader>
 
         <controlfield tag="005">
           <xsl:call-template name="tag005"/>
@@ -87,6 +87,12 @@ processor that supports EXSLT is pretty important.
         <controlfield tag="008">
           <xsl:call-template name="tag008"/>
         </controlfield>
+
+        <datafield tag="024" ind1="8" ind2=" ">
+            <subfield code="a">
+                <xsl:value-of select="normalize-space(/codeBook/stdyDscr/citation/titlStmt/IDNo)"/>
+            </subfield>
+        </datafield>
 
         <!-- Title -->
         <datafield ind1="0" ind2="0" tag="245">
@@ -100,64 +106,92 @@ processor that supports EXSLT is pretty important.
           </xsl:if>
         </datafield>
 
-        <!-- Authors -->
-        <xsl:for-each select="/codeBook/docDscr/citation/rspStmt/AuthEnty">
-          <datafield tag="720" ind1=" " ind2=" ">
-            <subfield code="a"><xsl:value-of select="normalize-space(text())"/></subfield>
-            <subfield code="e">author</subfield>
-          </datafield>
+        <xsl:for-each select="/codeBook/stdyDscr/citation/titlStmt/altTitl">
+            <datafield tag="246" ind1="3" ind2=" ">
+              <subfield code="a">
+                <xsl:value-of select="normalize-space(text())"/>
+              </subfield>
+            </datafield>
         </xsl:for-each>
 
+        <xsl:for-each select="/codeBook/stdyDscr/citation/titlStmt/parTitl">
+            <datafield tag="246" ind1="3" ind2="1">
+              <subfield code="a">
+                <xsl:value-of select="normalize-space(text())"/>
+              </subfield>
+            </datafield>
+        </xsl:for-each>
+
+        
         <!-- Publication and distribution -->
         <datafield ind1=" " ind2=" " tag="260">
 
           <subfield code="a">
-            <xsl:value-of select="normalize-space(/codeBook/docDscr/citation/prodStmt/prodPlac)"/>
+            <xsl:value-of select="normalize-space(/codeBook/stdyDscr/citation/prodStmt/prodPlac)"/> :
           </subfield>
           <subfield code="b">
-            <xsl:value-of select="normalize-space(/codeBook/docDscr/citation/prodStmt/producer)"/>
+            <xsl:value-of select="normalize-space(/codeBook/stdyDscr/citation/prodStmt/producer)"/>,
           </subfield>
           <subfield code="c">
-            <xsl:value-of select="normalize-space(/codeBook/docDscr/citation/prodStmt/prodDate)"/>
+            <xsl:value-of select="normalize-space(/codeBook/stdyDscr/citation/prodStmt/prodDate)"/>.
           </subfield>
         </datafield>
+
+        <xsl:for-each select="dataAccs/useStmt/restrctn">
+            <datafield tag="506" ind1=" " ind2=" ">
+                <subfield code="a"><xsl:value-of select="normalize-space(text())"/></subfield>
+            </datafield>
+        </xsl:for-each>
 
         <!-- Summary, etc. -->
         <!-- I'm going to assume that the abstract fits nicely here. -->
-        <datafield ind1=" " ind2=" " tag="520">
-          <subfield code="a">
-            <xsl:value-of select="normalize-space(stdyInfo/abstract)"/>
-          </subfield>
-        </datafield>
+        <xsl:for-each select="stdyInfo/abstract">
+            <datafield ind1="3" ind2=" " tag="520">
+              <subfield code="a">
+                <xsl:value-of select="normalize-space(text())"/>
+              </subfield>
+            </datafield>
+        </xsl:for-each>
 
         <!-- Keywords -->
         <xsl:for-each select="stdyInfo/subject/keyword">
-          <datafield tag="653" ind1="0" ind2=" ">
+          <datafield tag="653" ind1=" " ind2=" ">
             <subfield code="a">
               <xsl:value-of select="normalize-space(text())"/>
             </subfield>
           </datafield>
         </xsl:for-each>
 
+        <!-- Authors -->
+        <xsl:for-each select="/codeBook/stdyDscr/citation/rspStmt/AuthEnty">
+          <datafield tag="720" ind1=" " ind2=" ">
+            <subfield code="a"><xsl:value-of select="normalize-space(text())"/></subfield>
+            <!--<subfield code="e">author</subfield> -->
+          </datafield>
+        </xsl:for-each>
+
         <!-- Links -->
         <xsl:for-each select="/codeBook/docDscr/citation/holdings">
-          <datafield tag="856" ind2=" ">
+          <datafield tag="856">
             <xsl:choose>
 
               <!-- Email -->
               <xsl:when test="starts-with(translate(@URI, 'MAILTO', 'mailto'), 'mailto:')">
                 <xsl:attribute name="ind1">0</xsl:attribute>
+                <xsl:attribute name="ind2">2</xsl:attribute>
               </xsl:when>
 
               <!-- FTP -->
               <xsl:when test="starts-with(translate(@URI, 'FTP', 'ftp'), 'ftp:')">
                 <xsl:attribute name="ind1">1</xsl:attribute>
+                <xsl:attribute name="ind2">2</xsl:attribute>
               </xsl:when>
 
               <!-- Telnet -->
               <!-- TODO: Figure out why this isn't working. -->
               <xsl:when test="starts-with(translate(@URI, 'TELN', 'teln'), 'telnet:')">
                 <xsl:attribute name="ind1">2</xsl:attribute>
+                <xsl:attribute name="ind2">2</xsl:attribute>
               </xsl:when>
 
               <!-- I'm not sure what URI prefix would be used for option 3,
@@ -167,11 +201,13 @@ processor that supports EXSLT is pretty important.
               <!-- HTTP -->
               <xsl:when test="starts-with(translate(@URI, 'HTP', 'htp'), 'http:')">
                 <xsl:attribute name="ind1">4</xsl:attribute>
+                <xsl:attribute name="ind2">2</xsl:attribute>
               </xsl:when>
 
               <!-- Some other provided protocol -->
               <xsl:when test="contains(@URI, '://')">
                 <xsl:attribute name="ind1">7</xsl:attribute>
+                <xsl:attribute name="ind2">2</xsl:attribute>
                 <subfield code="2">
                   <xsl:value-of select="translate(substring-before(@URI, '://'), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')"/>
                 </subfield>
@@ -179,21 +215,32 @@ processor that supports EXSLT is pretty important.
 
               <!-- Default: No information given -->
               <xsl:otherwise>
-                <xsl:attribute name="ind1"><xsl:text> </xsl:text></xsl:attribute>
+                <xsl:attribute name="ind1"><xsl:text>4</xsl:text></xsl:attribute>
+                <xsl:attribute name="ind2">2</xsl:attribute>
               </xsl:otherwise>
 
             </xsl:choose>
             <subfield code="u">
               <xsl:value-of select="@URI"/>
             </subfield>
+            <!--
             <subfield code="y">
               <xsl:value-of select="normalize-space(text())"/>
             </subfield>
+            -->
             <subfield code="z">
               <xsl:value-of select="@location"/>
             </subfield>
           </datafield>
         </xsl:for-each>
+
+        <datafield tag="856" ind1="4" ind2="0">
+            <subfield code="u">
+                <xsl:variable name="idnumber" select="normalize-space(/codeBook/stdyDscr/citation/titlStmt/IDNo)"/>
+                <xsl:value-of select="concat('http://odesi1.scholarsportal.info:80/webview/index.jsp?object=http://142.150.190.11:80%2Fobj%2FfStudy%2F', concat($idnumber, '&amp;mode=documentation&amp;v=2&amp;top=yes'))"/>
+            </subfield>
+        </datafield>
+          
 
       </record>
     </collection>
@@ -226,21 +273,22 @@ processor that supports EXSLT is pretty important.
     <!-- 00-05 - Date entered on file (the date the MARC record was created,
          so the date the XSLT is run) in YYMMDD format. -->
     <xsl:variable name="packed-string" select="format-number(substring(ex:year(), 3, 2), '00')"/>
-    <xsl:variable name="packed-string" select="concat(format-number($packed-string, ex:month-in-year()), '00')"/>
-    <xsl:variable name="packed-string" select="concat(format-number($packed-string, ex:day-in-month()), '00')"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:month-in-year(), '00'))"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:day-in-month(), '00'))"/>
 
     <!-- 06 - Type of date/Publication status -->
     <!-- e - Detailed date -->
-    <xsl:variable name="packed-string" select="concat($packed-string, 'e')"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, 's')"/>
 
     <!-- 07-10 - Date 1; 11-14 - Date 2 -->
     <xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:year(ex:date($prod-date)), '0000'))"/>
-    <xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:month-in-year(ex:date($prod-date)), '00'))"/>
-    <xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:day-in-month(ex:date($prod-date)), '00'))"/>
+    <!--<xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:month-in-year(ex:date($prod-date)), '00'))"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, format-number(ex:day-in-month(ex:date($prod-date)), '00'))"/> -->
+    <xsl:variable name="packed-string" select="concat($packed-string, '    ')"/>
 
     <!-- 15-17 - Place of publication, production, or execution -->
     <!-- Not including this for now. -->
-    <xsl:variable name="packed-string" select="concat($packed-string, '|||')"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, '   ')"/>
 
     <!-- 18-34 - Medium-specific fields -->
     <!-- Just use spaces for now. -->
@@ -248,12 +296,12 @@ processor that supports EXSLT is pretty important.
 
     <!-- 35-37 - Language -->
     <!-- Don't include this for now. -->
-    <xsl:variable name="packed-string" select="concat($packed-string, '|||')"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, 'eng')"/>
 
     <!-- 38 - Modified record -->
     <!-- 39 - Cataloging source -->
     <!-- Use 'no attempt to code' for these. -->
-    <xsl:variable name="packed-string" select="concat($packed-string, '||')"/>
+    <xsl:variable name="packed-string" select="concat($packed-string, ' d')"/>
 
     <!-- Spit the finalized string out. -->
     <xsl:value-of select="$packed-string"/>
